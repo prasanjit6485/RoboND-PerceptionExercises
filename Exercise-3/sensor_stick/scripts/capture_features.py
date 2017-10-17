@@ -2,6 +2,7 @@
 import numpy as np
 import pickle
 import rospy
+import argparse
 
 from sensor_stick.pcl_helper import *
 from sensor_stick.training_helper import spawn_model
@@ -23,8 +24,20 @@ def get_normals(cloud):
 if __name__ == '__main__':
     rospy.init_node('capture_node')
 
-    pick_list = 3
+    # Argument Parsing
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--list', action='store', dest='num',
+                    help='Pick a valid list number', type=int, required=True)
+    parser.add_argument('-t', '--times', action='store', dest='num_times', default = 50,
+                    help='Number of times to capture features for each model', type=int)
+    parser.add_argument('-no_hsv', action='store_false', dest='flag', default = True,
+                    help='Compute color hist using HSV')
+    args = parser.parse_args()
+    pick_list = args.num
+    ntimes = args.num_times
+    hsv_flag = args.flag
 
+    # Capture features based on user input
     if pick_list == 1:
         print("Capturing features for pick_list_1")
         models = [\
@@ -69,7 +82,7 @@ if __name__ == '__main__':
     for model_name in models:
         spawn_model(model_name)
 
-        for i in range(50):
+        for i in range(ntimes):
             # make five attempts to get a valid a point cloud then give up
             sample_was_good = False
             try_count = 0
@@ -85,7 +98,7 @@ if __name__ == '__main__':
                     sample_was_good = True
 
             # Extract histogram features
-            chists = compute_color_histograms(sample_cloud, using_hsv=True)
+            chists = compute_color_histograms(sample_cloud, using_hsv=hsv_flag)
             normals = get_normals(sample_cloud)
             nhists = compute_normal_histograms(normals)
             feature = np.concatenate((chists, nhists))
@@ -93,6 +106,6 @@ if __name__ == '__main__':
 
         delete_model()
 
-
-    pickle.dump(labeled_features, open('training_set.sav', 'wb'))
+    file_name = 'training_set_' + str(pick_list) + '.sav'
+    pickle.dump(labeled_features, open(file_name, 'wb'))
 

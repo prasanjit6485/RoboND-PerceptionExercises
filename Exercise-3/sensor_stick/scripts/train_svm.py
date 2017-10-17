@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import pickle
 import itertools
+import sys
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import svm
@@ -35,8 +37,21 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
+# Argument Parsing
+parser = argparse.ArgumentParser()
+parser.add_argument('-l', '--list', action='store', dest='num',
+                help='Pick list number', type=int, required=True)
+args = parser.parse_args()
+pick_list = args.num
+
 # Load training data from disk
-training_set = pickle.load(open('training_set.sav', 'rb'))
+file_name = 'training_set_' + str(pick_list) + '.sav'
+try:
+  training_set = pickle.load(open(file_name, 'rb'))
+except (OSError, IOError) as e:
+  print("Unable to open/read file")
+  sys.exit()
+
 
 # Format the features and labels for use with scikit learn
 feature_list = []
